@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeLink - San Fernando Weather</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #e5e5e5; color: #333; }
+  header { background: #004080; color: white; padding: 20px; text-align: center; }
+  header h1 { margin: 0; }
+  header nav { margin-top: 10px; }
+  header nav a { color: #fff; margin: 0 10px; text-decoration: none; font-weight: bold; }
+  header nav a:hover { text-decoration: underline; }
+
+  main { display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; gap: 20px; }
+
+  .panel {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    width: 400px;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+  }
+
+  .panel h2 { margin-top: 0; color: #004080; }
+  .field { margin: 8px 0; }
+  .field span.label { font-weight: bold; }
+  .safe { color: green; font-weight: bold; }
+  .caution { color: orange; font-weight: bold; }
+  .danger { color: red; font-weight: bold; }
+
+  ul { padding-left: 20px; margin: 5px 0; }
+
+  footer { background: #004080; color: white; text-align: center; padding: 15px; margin-top: 20px; }
+
+  @media(max-width: 900px) { .panel { width: 100%; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SafeLink</h1>
+  <nav>
+    <a href="#weather">Weather</a> | 
+    <a href="#tips">Fishing Tips</a> | 
+    <a href="#how-it-works">How It Works</a>
+  </nav>
+</header>
+
+<main>
+  <div class="panel" id="weather">
+    <h2>Current Weather - San Fernando, La Union</h2>
+    <div class="field"><span class="label">Temperature:</span> <span id="temp">--</span> °C (<span id="temp_desc">--</span>)</div>
+    <div class="field"><span class="label">Wind:</span> <span id="wind">--</span> mps (<span id="wind_desc">--</span>)</div>
+    <div class="field"><span class="label">Rain:</span> <span id="rain">--</span> mm (<span id="rain_desc">--</span>)</div>
+    <div class="field"><span class="label">Air Pressure:</span> <span id="pressure">--</span> hPa (<span id="pressure_desc">--</span>)</div>
+    <div class="field"><span class="label">Sea Level:</span> <span id="seaLevel">--</span> (<span id="seaLevel_desc">--</span>)</div>
+    <div class="field"><span class="label">Humidity:</span> <span id="humidity">--</span>% (<span id="humidity_desc">--</span>)</div>
+    <div class="field"><span class="label">Fishing Status:</span> <span id="fishing" class="safe">--</span></div>
+  </div>
+
+  <div class="panel" id="tips">
+    <h2>Fishing Tips</h2>
+    <ul id="tipsList">
+      <li>--</li>
+    </ul>
+  </div>
+
+  <div class="panel" id="how-it-works">
+    <h2>How the Invention Works</h2>
+    <ul>
+      <li>ESP32 collects weather and vibration data from sensors.</li>
+      <li>Data is sent via SIM800L to Google Apps Script (stored in Google Sheets).</li>
+      <li>Website fetches JSON from Google Sheets and updates in real-time.</li>
+      <li>Fishing tips and alerts are generated based on temperature, wind, rain, pressure, sea level, and humidity.</li>
+      <li>Vibration alerts trigger SMS and call automatically if thresholds are exceeded.</li>
+    </ul>
+  </div>
+</main>
+
+<footer>
+  © 2026 SafeLink
+</footer>
+
+<script>
+const JSON_URL = "https://script.google.com/macros/s/AKfycbzhLP_wwhvED6nJEVmpF8YkoHZZsxuaJLts91wOBj3Sku1R38mqVcoz3KHWLiHQ3M55ng/exec";
+
+// Function to fetch data from Google Apps Script
+async function fetchWeather() {
+  try {
+    const response = await fetch(JSON_URL);
+    const data = await response.json();
+
+    // Weather panel
+    document.getElementById("temp").innerText = data.temp;
+    document.getElementById("temp_desc").innerText = data.temp_desc;
+    document.getElementById("wind").innerText = data.wind;
+    document.getElementById("wind_desc").innerText = data.wind_desc;
+    document.getElementById("rain").innerText = data.rain;
+    document.getElementById("rain_desc").innerText = data.rain_desc;
+    document.getElementById("pressure").innerText = data.pressure;
+    document.getElementById("pressure_desc").innerText = data.pressure_desc;
+    document.getElementById("seaLevel").innerText = data.sea_level;
+    document.getElementById("seaLevel_desc").innerText = data.sea_level_desc;
+    document.getElementById("humidity").innerText = data.humidity;
+    document.getElementById("humidity_desc").innerText = data.humidity_desc;
+
+    const fishingEl = document.getElementById("fishing");
+    fishingEl.innerText = data.fishing_status;
+    fishingEl.className = "";
+    if(data.fishing_status.toLowerCase().includes("safe")) fishingEl.classList.add("safe");
+    else if(data.fishing_status.toLowerCase().includes("risk")) fishingEl.classList.add("caution");
+    else fishingEl.classList.add("danger");
+
+    // Fishing Tips
+    const tipsList = document.getElementById("tipsList");
+    tipsList.innerHTML = "";
+    data.tips.forEach(tip => {
+      const li = document.createElement("li");
+      li.innerText = tip;
+      tipsList.appendChild(li);
+    });
+
+  } catch(err) {
+    console.error("Failed to fetch weather:", err);
+  }
+}
+
+// Initial fetch + repeat every 10 minutes
+fetchWeather();
+setInterval(fetchWeather, 600000);
+</script>
+
+</body>
+</html>
